@@ -114,5 +114,39 @@ pub mod queue {
                 }
             }
         }
+        pub fn get(&mut self) -> Result<T, Box<dyn std::error::Error>> {
+            match self.root.take() {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    let temp = value.borrow().data.clone();
+                    match &value.borrow().next {
+                        None => {
+                            self.root = None;
+                        },
+                        Some(content) => {
+                            self.root = Some(Rc::clone(content));
+                        }
+                    }
+                    self.amount -= 1;
+                    return Ok(temp);
+                }
+            }
+        }
+        pub fn top(&self) -> Result<T, Box<dyn std::error::Error>> {
+            match &self.root {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    let temp = value.borrow().data.clone();
+                    return Ok(temp);
+                }
+            }
+        }
+        pub fn size(&self) -> &usize {
+            return &self.amount;
+        }
     }
 }
