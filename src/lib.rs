@@ -150,3 +150,116 @@ pub mod queue {
         }
     }
 }
+pub mod linked_list {
+    use std::{rc::Rc, cell::RefCell};
+    struct Single<T: Clone> {
+        data: T,
+        next: Option<Rc<RefCell<Single<T>>>>,
+    }
+    pub struct SinglyLinkedList<T: Clone> {
+        root: Option<Rc<RefCell<Single<T>>>>,
+        amount: usize,
+    }
+    impl<T> SinglyLinkedList<T> where T: Clone {
+        pub fn new() -> Self {
+            return SinglyLinkedList {
+                root: None,
+                amount: 0,
+            };
+        }
+        pub fn push_begin(&mut self, data: T) {
+            match self.root.take() {
+                None => {
+                    self.root = Some(Rc::new(RefCell::new(Single {
+                        data,
+                        next: None,
+                    })));
+                },
+                Some(value) => {
+                    let node = Rc::new(RefCell::new(Single {
+                        data,
+                        next: Some(Rc::clone(&value)),
+                    }));
+                    self.root = Some(node);
+                }
+            }
+            self.amount += 1;
+        }
+        pub fn push_back(&mut self, data: T) {
+            match &self.root {
+                None => {
+                    self.root = Some(Rc::new(RefCell::new(Single {
+                        data,
+                        next: None,
+                    })));
+                },
+                Some(value) => {
+                    let mut current = Some(Rc::clone(value));
+                    while let Some(temp) = current {
+                        match &temp.borrow().next {
+                            None => {
+                                temp.borrow_mut().next = Some(Rc::new(RefCell::new(Single {
+                                    data,
+                                    next: None,
+                                })));
+                                return;
+                            },
+                            Some(next) => {
+                                current = Some(Rc::clone(next));
+                            }
+                        }
+                    }
+                }
+            }
+            self.amount += 1;
+        }
+        pub fn push_to(&mut self, data: T, index: usize) {
+            if index >= self.amount {
+                self.push_back(data);
+            } else {
+                if index == 0 {
+                    self.push_begin(data);
+                } else {
+                    match &self.root {
+                        None => {
+                            self.root = Some(Rc::new(RefCell::new(Single {
+                                data,
+                                next: None,
+                            })));
+                        },
+                        Some(value) => {
+                            let mut current = Some(Rc::clone(value));
+                            let mut counter = 1;
+                            while let Some(temp) = current {
+                                match &temp.borrow().next {
+                                    None => {
+                                        temp.borrow_mut().next = Some(Rc::new(RefCell::new(Single {
+                                            data,
+                                            next: None,
+                                        })));
+                                        return;
+                                    },
+                                    Some(content) => {
+                                        if counter == index {
+                                            let node = Rc::new(RefCell::new(Single {
+                                                data,
+                                                next: Some(Rc::clone(content)),
+                                            }));
+                                            temp.borrow_mut().next = Some(Rc::clone(&node));
+                                            return;
+                                        } else {
+                                            current = Some(Rc::clone(content));
+                                            counter += 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+
+    }
+}
