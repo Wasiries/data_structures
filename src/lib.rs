@@ -152,15 +152,15 @@ pub mod queue {
 }
 pub mod linked_list {
     use std::{rc::Rc, cell::RefCell};
-    struct Single<T: Clone> {
+    struct Single<T: Clone + std::fmt::Display + std::fmt::Debug> {
         data: T,
         next: Option<Rc<RefCell<Single<T>>>>,
     }
-    pub struct SinglyLinkedList<T: Clone> {
+    pub struct SinglyLinkedList<T: Clone + std::fmt::Display + std::fmt::Debug> {
         root: Option<Rc<RefCell<Single<T>>>>,
         amount: usize,
     }
-    impl<T> SinglyLinkedList<T> where T: Clone {
+    impl<T> SinglyLinkedList<T> where T: Clone + std::fmt::Display + std::fmt::Debug {
         pub fn new() -> Self {
             return SinglyLinkedList {
                 root: None,
@@ -213,7 +213,7 @@ pub mod linked_list {
             }
             self.amount += 1;
         }
-        pub fn push_to(&mut self, data: T, index: usize) {
+        pub fn insert(&mut self, data: T, index: usize) {
             if index >= self.amount {
                 self.push_back(data);
             } else {
@@ -259,7 +259,167 @@ pub mod linked_list {
                 }
             }
         }
-        
-
+        pub fn pop_begin(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+            match self.root.take() {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    match &value.borrow().next {
+                        None => {
+                            self.root = None;
+                        },
+                        Some(content) => {
+                            self.root = Some(Rc::clone(content));
+                        }
+                    }
+                    self.amount -= 1;
+                    return Ok(());
+                }
+            }
+        }
+        pub fn pop_back(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+            match self.root.clone() {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    match &value.borrow().next {
+                        None => {
+                            self.root = None;
+                        },
+                        Some(_) => {
+                            let mut current = Some(Rc::clone(&value));
+                            while let Some(content) = current {
+                                match &content.borrow().next {
+                                    None => {
+                                        return Err(Box::new(std::fmt::Error));
+                                    },
+                                    Some(temp) => {
+                                        match &temp.borrow().next {
+                                            None => {
+                                                content.borrow_mut().next = None;
+                                                break;
+                                            },
+                                            Some(_) => {
+                                                current = Some(Rc::clone(temp));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    self.amount -= 1;
+                    return Ok(());
+                }
+            }
+        }
+        pub fn erase(&mut self, index: usize) -> Result<(), Box<dyn std::error::Error>> {
+            if index >= self.amount {
+                return Err(Box::new(std::fmt::Error));
+            }
+            if index == 0 {
+                return self.pop_begin();
+            }
+            match self.root.clone() {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    match &value.borrow().next {
+                        None => {
+                            return Err(Box::new(std::fmt::Error));
+                        },
+                        Some(_) => {
+                            let mut current = Some(Rc::clone(&value));
+                            let mut counter = 1;
+                            while let Some(temp) = current {
+                                match &temp.borrow().next {
+                                    None => {
+                                        return Err(Box::new(std::fmt::Error));
+                                    },
+                                    Some(next) => {
+                                        match &next.borrow().next {
+                                            None => {
+                                                temp.borrow_mut().next = None;
+                                                break;
+                                            },
+                                            Some(further) => {
+                                                if counter == index {
+                                                    temp.borrow_mut().next = Some(Rc::clone(further));
+                                                    break;
+                                                } else {
+                                                    current = Some(Rc::clone(next));
+                                                    counter += 1;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            self.amount -= 1;
+            return Ok(());
+        }
+        pub fn get(&self, index: usize) -> Result<T, Box<dyn std::error::Error>> {
+            if index >= self.amount {
+                return Err(Box::new(std::fmt::Error));
+            }
+            match &self.root {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    let mut current = Some(Rc::clone(value));
+                    let mut counter = 0;
+                    while let Some(content) = current {
+                        if counter == index {
+                            return Ok(content.borrow().data.clone());
+                        } else {
+                            match &content.borrow().next {
+                                None => {
+                                    return Err(Box::new(std::fmt::Error));
+                                },
+                                Some(temp) => {
+                                    current = Some(Rc::clone(temp));
+                                    counter += 1;
+                                }
+                            }
+                        }
+                    }
+                    return Ok(value.borrow().data.clone());
+                }
+            }
+        }
+        pub fn show(&self) {
+            println!("=====================list=begin=====================");
+            match &self.root {
+                None => {
+                    println!(" ");
+                }, 
+                Some(value) => {
+                    let mut current = Some(Rc::clone(value));
+                    while let Some(content) = current {
+                        println!("{}", &content.borrow().data);
+                        match &content.borrow().next {
+                            None => {
+                                break;
+                            },
+                            Some(next) => {
+                                current = Some(Rc::clone(next));
+                            }
+                        }
+                    }
+                }
+            }
+            println!("======================list=end======================");
+        }
+        pub fn size(&self) -> &usize {
+            return &self.amount;
+        }
     }
 }
