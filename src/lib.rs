@@ -151,7 +151,7 @@ pub mod queue {
     }
 }
 pub mod linked_list {
-    use std::{rc::Rc, cell::RefCell};
+    use std::{rc::{Rc, Weak}, cell::RefCell};
     struct Single<T: Clone + std::fmt::Display + std::fmt::Debug> {
         data: T,
         next: Option<Rc<RefCell<Single<T>>>>,
@@ -420,6 +420,210 @@ pub mod linked_list {
         }
         pub fn size(&self) -> &usize {
             return &self.amount;
+        }
+    }
+    struct Double<T: Clone + std::fmt::Debug + std::fmt::Display> {
+        data: T,
+        prev: Option<Weak<RefCell<Double<T>>>>,
+        next: Option<Rc<RefCell<Double<T>>>>,
+    }
+    pub struct DoublyLinkedList<T: Clone + std::fmt::Debug + std::fmt::Display> {
+        head: Option<Rc<RefCell<Double<T>>>>,
+        tail: Option<Weak<RefCell<Double<T>>>>,
+        amount: usize,
+    }
+    impl<T> DoublyLinkedList<T> where T: Clone + std::fmt::Debug + std::fmt::Display {
+        pub fn new() -> Self {
+            return DoublyLinkedList {
+                head: None,
+                tail: None,
+                amount: 0
+            };
+        }
+        pub fn push_begin(&mut self, data: T) {
+            match &self.head {
+                None => {
+                    let node = Rc::new(RefCell::new(Double{
+                        data,
+                        prev: None,
+                        next: None,
+                    }));
+                    self.head = Some(Rc::clone(&node));
+                    self.tail = Some(Rc::downgrade(&node));
+                },
+                Some(value) => {
+                    let node = Rc::new(RefCell::new(Double {
+                        data,
+                        prev: None,
+                        next: Some(Rc::clone(value)),
+                    }));
+                    value.borrow_mut().prev = Some(Rc::downgrade(&node));
+                    self.head = Some(Rc::clone(&node));
+                }
+            }
+            self.amount += 1;
+        }
+        pub fn push_back(&mut self, data: T) {
+            match &self.tail {
+                None => {
+                    let node = Rc::new(RefCell::new(Double {
+                        data,
+                        prev: None,
+                        next: None,
+                    }));
+                    self.head = Some(Rc::clone(&node));
+                    self.tail = Some(Rc::downgrade(&node));
+                },
+                Some(value) => {
+                    let node = Rc::new(RefCell::new(Double {
+                        data,
+                        prev: Some(Weak::clone(value)),
+                        next: None,
+                    }));
+                    value.upgrade().unwrap().borrow_mut().next = Some(Rc::clone(&node));
+                    self.tail = Some(Rc::downgrade(&node));
+                }
+            }
+            self.amount += 1;
+        }
+        pub fn insert(&mut self, data: T, index: usize) {
+            if index >= self.amount {
+                self.push_back(data);
+                return;
+            }
+            if index == 0 {
+                self.push_begin(data);
+                return;
+            }
+            match &self.head {
+                None => {
+                    let node = Rc::new(RefCell::new(Double {
+                        data,
+                        prev: None,
+                        next: None,
+                    }));
+                    self.head = Some(Rc::clone(&node));
+                    self.tail = Some(Rc::downgrade(&node));
+                },
+                Some(value) => {
+                    let mut current = Some(Rc::clone(value));
+                    let mut counter = 1;
+                    while let Some(temp) = current {
+                        match &temp.borrow().next {
+                            None => {
+                                let node = Rc::new(RefCell::new(Double {
+                                    data,
+                                    prev: Some(Rc::downgrade(&temp)),
+                                    next: None,
+                                }));
+                                temp.borrow_mut().next = Some(Rc::clone(&node));
+                                self.tail = Some(Rc::downgrade(&node));
+                                break;
+                            },
+                            Some(content) => {
+                                if counter == index {
+                                    let node = Rc::new(RefCell::new(Double {
+                                        data,
+                                        prev: Some(Rc::downgrade(&temp)),
+                                        next: Some(Rc::clone(content)),
+                                    }));
+                                    temp.borrow_mut().next = Some(Rc::clone(&node));
+                                    content.borrow_mut().prev = Some(Rc::downgrade(&node));
+                                    break;
+                                }
+                                current = Some(Rc::clone(content));
+                                counter += 1;
+                            }
+                        }
+                    }
+                }
+            }
+            self.amount += 1;
+        }
+        pub fn pop_begin(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+            match self.head.take() {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    match &value.borrow().next {
+                        None => {
+                            self.head = None;
+                            self.tail = None;
+                        },
+                        Some(content) => {
+                            content.borrow_mut().prev = None;
+                            self.head = Some(Rc::clone(&content));
+                        }
+                    }
+                    self.amount -= 1;
+                    return Ok(());
+                }
+            }
+        }
+        pub fn pop_back(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+            match self.tail.take() {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    match &value.upgrade().unwrap().borrow().prev {
+                        None => {
+                            self.head = None;
+                            self.tail = None;
+                        },
+                        Some(content) => {
+                            content.upgrade().unwrap().borrow_mut().next = None;
+                            self.tail = Some(Weak::clone(content));
+                        }
+                    }
+                    self.amount -= 1;
+                    return Ok(());
+                }
+            }
+        }
+        pub fn erase(&mut self, index: usize) -> Result<(), Box<dyn std::error::Error>> {
+            if index >= self.amount {
+                return Err(Box::new(std::fmt::Error));
+            }
+            if index == 0 {
+                return self.pop_begin();
+            }
+            match &self.head {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    let mut current = Some(Rc::clone(value));
+                    let mut counter = 1;
+                    while let Some(content) = current {
+                        match &content.borrow().next {
+                            None => {
+                                return Err(Box::new(std::fmt::Error));
+                            },
+                            Some(temp) => {
+                                if counter == index {
+                                    match &temp.borrow().next {
+                                        None => {
+                                            content.borrow_mut().next = None;
+                                            break;
+                                        },
+                                        Some(further) => {
+                                            further.borrow_mut().prev = Some(Rc::downgrade(&content));
+                                            content.borrow_mut().next = Some(Rc::clone(further));
+                                            break;
+                                        }
+                                    }
+                                }
+                                current = Some(Rc::clone(temp));
+                                counter += 1;
+                            }
+                        }
+                    }
+                    self.amount -= 1;
+                    return Ok(());
+                }
+            }
         }
     }
 }
