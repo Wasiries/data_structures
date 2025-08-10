@@ -540,7 +540,6 @@ pub mod linked_list {
             }
             self.amount += 1;
         }
-<<<<<<< HEAD
         pub fn pop_begin(&mut self) -> Result<(), Box<dyn std::error::Error>> {
             match self.head.take() {
                 None => {
@@ -681,7 +680,15 @@ pub mod linked_list {
         pub fn size(&self) -> &usize {
             return &self.amount;
         }
-=======
->>>>>>> 871d0dd21270216bdf403cbedb77566917ef29e2
+        pub fn write(&self, index: usize) {
+            match &self.get(index) {
+                Ok(value) => {
+                    println!("{}", value);
+                },
+                Err(_) => {
+                    println!("there is nothing to see");
+                }
+            }
+        }
     }
 }
