@@ -399,7 +399,7 @@ pub mod linked_list {
             println!("=====================list=begin=====================");
             match &self.root {
                 None => {
-                    println!(" ");
+                    println!("\n");
                 }, 
                 Some(value) => {
                     let mut current = Some(Rc::clone(value));
@@ -624,6 +624,61 @@ pub mod linked_list {
                     return Ok(());
                 }
             }
+        }
+        pub fn get(&self, index: usize) -> Result<T, Box<dyn std::error::Error>> {
+            if index >= self.amount {
+                return Err(Box::new(std::fmt::Error));
+            }
+            match &self.head {
+                None => {
+                    return Err(Box::new(std::fmt::Error));
+                },
+                Some(value) => {
+                    let mut current = Some(Rc::clone(value));
+                    let mut counter = 0;
+                    while let Some(content) = current {
+                        if counter == index {
+                            return Ok(content.borrow().data.clone());
+                        }
+                        current = match &content.borrow().next {
+                            None => {
+                                None
+                            },
+                            Some(temp) => {
+                                Some(Rc::clone(temp))
+                            }
+                        };
+                        counter += 1;
+                    }
+                    return Ok(value.borrow().data.clone());
+                }
+            }
+        }
+        pub fn show(&self) {
+            println!("=====================list=begin=====================");
+            match &self.head {
+                None => {
+                    println!("\n");
+                },
+                Some(value) => {
+                    let mut current = Some(Rc::clone(value));
+                    while let Some(content) = current {
+                        println!("{}", &content.borrow().data);
+                        current = match &content.borrow().next {
+                            None => {
+                                None
+                            },
+                            Some(temp) => {
+                                Some(Rc::clone(temp))
+                            }
+                        }
+                    }
+                }
+            }
+            println!("======================list=end======================");
+        }
+        pub fn size(&self) -> &usize {
+            return &self.amount;
         }
     }
 }
