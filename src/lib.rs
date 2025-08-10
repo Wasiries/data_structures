@@ -682,24 +682,3 @@ pub mod linked_list {
         }
     }
 }
-pub mod bin_tree {
-    use std::{cell::RefCell, rc::Rc};
-    struct Node<T: Clone + std::fmt::Debug + std::fmt::Display> {
-        data: T,
-        lift: Option<Rc<RefCell<Node<T>>>>,
-        right: Option<Rc<RefCell<Node<T>>>>,
-    }
-    pub struct Tree<T: Clone + std::fmt::Debug + std::fmt::Display> {
-        root: Option<Rc<RefCell<Node<T>>>>,
-        amount: usize,
-    }
-    impl<T> Tree<T> where T: Clone + std::fmt::Debug + std::fmt::Display {
-        pub fn new() -> Self {
-            return Tree {
-                root: None,
-                amount: 0,
-            };
-        }
-        
-    }
-}
